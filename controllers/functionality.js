@@ -10,6 +10,7 @@ import exiftool from "node-exiftool";
 import exiftoolBin from "dist-exiftool";
 import { footballLabels, officeLabels } from "../helper/labels.js";
 import sizeOf from "buffer-image-size";
+import { create } from "./createCanvas.js";
 // import exif from "exiftool";
 
 const router = express.Router();
@@ -21,6 +22,7 @@ const rekognitionClient = new RekognitionClient({ region: "eu-central-1" });
 
 router.post("/", upload.array("files"), async (req, res) => {
   try {
+    create();
     // Detects instances of real-world entities within an image as input.
     const detectLabelsCommand = new DetectLabelsCommand({
       Image: { Bytes: req.files[0].buffer },

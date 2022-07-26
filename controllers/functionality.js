@@ -5,9 +5,12 @@ import {
   DetectLabelsCommand,
 } from "@aws-sdk/client-rekognition";
 import sizeOf from "buffer-image-size";
-import { create } from "./createCanvas.js";
+import {
+  drawBoundingBoxes,
+  findIntersection,
+  calculateIOU,
+} from "./boundingBoxes.js";
 import { editMetadata } from "./exifTool.js";
-// import exif from "exiftool";
 // import { checkCategories } from "./imageCategories.js";
 
 const router = express.Router();
@@ -17,21 +20,27 @@ const rekognitionClient = new RekognitionClient({ region: "eu-central-1" });
 // array for the labels
 export let labelArr = [];
 
+// variables for the width and height of the input image
+export let imageWidth;
+export let imageHeight;
+
+// the dimensions of the AWS bounding box in pixels
+export let AWS_finalHeight;
+export let AWS_finalWidth;
+export let AWS_yStart;
+export let AWS_xStart;
+
 // variable for the data from the request image
 let buffer;
 
-// the attributes of a bounding box
+// the dimensions of the AWS bounding box in relation to the input image
 let bb_height;
 let bb_width;
-let bb_top;
-let bb_left;
-
-// variables for the width and height of the input image
-let imageWidth;
-let imageHeight;
+let topCoordinate;
+let leftCoordinate;
 
 // array for the bounding box for detected person
-let personBoundingBox = [];
+let personBoundingBox = []; // this array is maybe not needed as the individual coordinates are being exported
 
 router.post("/", upload.array("files"), async (req, res) => {
   buffer = req.files[0].buffer;
@@ -43,9 +52,6 @@ router.post("/", upload.array("files"), async (req, res) => {
     });
     // sends the detectLabelsCommand to the client
     const response = await rekognitionClient.send(detectLabelsCommand);
-    // return the labels from the response
-    const labels = response.Labels;
-
     // get the labels detected from the image
     response.Labels.forEach((result) => labelArr.push(result.Name));
     // console.log("labels found: ", labelArr);
@@ -54,12 +60,8 @@ router.post("/", upload.array("files"), async (req, res) => {
     var dimensions = sizeOf(buffer);
     imageWidth = dimensions.width;
     imageHeight = dimensions.height;
-    console.log(
-      "REQ image width: " + imageWidth,
-      "REQ image height: " + imageHeight
-    );
 
-    // --------- get the bounding box for person ---------
+    // get the bounding box for person
 
     response.Labels.forEach((label) => {
       // labelArr.push(i.Name);
@@ -68,13 +70,13 @@ router.post("/", upload.array("files"), async (req, res) => {
         label.Instances.forEach((instance) => {
           bb_height = instance.BoundingBox.Height;
           bb_width = instance.BoundingBox.Width;
-          bb_top = instance.BoundingBox.Top;
-          bb_left = instance.BoundingBox.Left;
+          topCoordinate = instance.BoundingBox.Top;
+          leftCoordinate = instance.BoundingBox.Left;
 
           personBoundingBox.push(
             "height: " + bb_height,
-            "left: " + bb_left,
-            "top: " + bb_top,
+            "left: " + leftCoordinate,
+            "top: " + topCoordinate,
             "width: " + bb_width
           );
         });
@@ -82,36 +84,42 @@ router.post("/", upload.array("files"), async (req, res) => {
     });
 
     // get the location of the bounding box in pixels
-    let finalHeight = bb_height * imageHeight;
-    let finalWidth = bb_width * imageWidth;
-    let topCoordinate = bb_top * imageHeight;
-    let leftCoordinate = bb_left * imageWidth;
+    AWS_finalHeight = bb_height * imageHeight;
+    AWS_finalWidth = bb_width * imageWidth;
+    AWS_yStart = topCoordinate * imageHeight;
+    AWS_xStart = leftCoordinate * imageWidth;
 
     console.log(
       "AWS bounding box: ",
-      "finalHeight: ",
-      finalHeight,
-      "finalWidth: ",
-      finalWidth,
-      "topCoordinate: ",
-      topCoordinate,
-      "leftCoordinate: ",
-      leftCoordinate
+      "AWS_finalHeight: ",
+      AWS_finalHeight,
+      "AWS_finalWidth: ",
+      AWS_finalWidth,
+      "AWS_yStart: ",
+      AWS_yStart,
+      "AWS_xStart: ",
+      AWS_xStart
     );
 
     // Draw bounding boxes, calculate IOU
-    create();
+    drawBoundingBoxes();
+
+    // find Intersection of the two rectangles
+    findIntersection();
+
+    // calculate the IOU
+    calculateIOU();
 
     // Write labels into the image metadata
     editMetadata(buffer);
 
-    // console.log("personBoundingBox: ", personBoundingBox);
+    console.log("personBoundingBox: ", personBoundingBox);
     // console.log("response: ", response);
 
     // call the checkCategories function here
     // checkCategories();
 
-    res.send(labels ?? "No labels found");
+    res.send(response.Labels ?? "No labels detected from the image!");
   } catch (err) {
     console.log(err);
     res.send(err);

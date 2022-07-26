@@ -22,7 +22,7 @@ export function editMetadata(buffer) {
             image,
             {
               // all: "", // remove existing tags
-              comment: "Exiftool rules!",
+              comment: "Exiftool rules!", // change this?
               subject: labelArr,
             },
             ["overwrite_original"]

@@ -1,15 +1,23 @@
 import { createCanvas, loadImage } from "canvas";
 import fs from "fs";
-// import {  } from "./functionality"
+import {
+  imageWidth,
+  imageHeight,
+  AWS_finalHeight,
+  AWS_finalWidth,
+  AWS_yStart,
+  AWS_xStart,
+} from "./functionality.js";
 
-const width = 600;
-const height = 597;
+// ground truth coordinates for person image
+let ground_xStart = 50;
+let ground_yStart = 120;
+let ground_width = 357;
+let ground_height = 445;
 
-export function create() {
-  const canvas = createCanvas(width, height);
+export function drawBoundingBoxes() {
+  const canvas = createCanvas(imageWidth, imageHeight);
   const context = canvas.getContext("2d");
-  //   context.fillStyle = "yellow";
-  //   context.fillRect(0, 0, width, height);
 
   loadImage("downloadImage.jpeg").then((image) => {
     context.drawImage(image, 0, 0);
@@ -17,53 +25,50 @@ export function create() {
     // the bounding box from AWS -> implement
     context.beginPath();
     // parameters: x and y start, width of box, height of box
-    context.rect(60, 145, 358, 443);
+    context.rect(AWS_xStart, AWS_yStart, AWS_finalWidth, AWS_finalHeight);
     context.lineWidth = 7;
     context.strokeStyle = "yellow";
     context.stroke();
 
     // ground truth -> implement
     context.beginPath();
-    context.rect(50, 120, 357, 445);
+    context.rect(ground_xStart, ground_yStart, ground_width, ground_height);
     context.lineWidth = 3;
     context.strokeStyle = "red";
     context.stroke();
 
-    findIntersection();
-    //intersection
+    // get the intersection area
+    let findInter = findIntersection();
+    let i = findInter.interSection;
+    // draw the intersection rectangle
     context.beginPath();
-    context.rect(60, 145, 347, 420);
+    context.rect(i[0], i[1], i[2], i[3]);
     context.lineWidth = 7;
-    // context.strokeStyle = "blue";
-    context.fillStyle = "blue";
-    context.fill();
-    // context.stroke();
+    // context.fillStyle = "blue";
+    // context.fill();
+    context.strokeStyle = "blue";
+    context.stroke();
 
     const buffer = canvas.toBuffer("image/png");
     fs.writeFileSync("./image.png", buffer);
-
-    calculateIOU();
   });
 }
 
 // https://www.geeksforgeeks.org/intersecting-rectangle-when-bottom-left-and-top-right-corners-of-two-rectangles-are-given/
 export function findIntersection() {
-  // parameters: x and y start, width of box, height of box
-  // const groundTruth = [50, 120, 357, 445];
-  // const AWSbox = [60, 145, 358, 443];
   let interSection = [];
 
   // AWS bounding box
-  const x1 = 60;
-  const y1 = 588;
-  const x2 = 418;
-  const y2 = 145;
+  const x1 = AWS_xStart;
+  const y1 = AWS_yStart + AWS_finalHeight;
+  const x2 = AWS_xStart + AWS_finalWidth;
+  const y2 = AWS_yStart;
 
   // "ground truth"
-  const x3 = 50;
-  const y3 = 565;
-  const x4 = 407;
-  const y4 = 120;
+  const x3 = ground_xStart;
+  const y3 = ground_yStart + ground_height;
+  const x4 = ground_xStart + ground_width;
+  const y4 = ground_yStart;
 
   // get bottom-left point of intersection rectangle
   var x5 = Math.max(x1, x3);
@@ -83,12 +88,17 @@ export function findIntersection() {
 
   // data needed for drawing the rectangle
   // x7 is the x starting point, y7 the y starting point
-  let xStart = x7;
-  let yStart = y7;
+  let intersection_xStart = x7;
+  let intersection_yStart = y7;
   let interSectionWidth = x8 - x7;
   let interSectionHeight = y8 - y7;
 
-  interSection = [xStart, yStart, interSectionWidth, interSectionHeight];
+  interSection = [
+    intersection_xStart,
+    intersection_yStart,
+    interSectionWidth,
+    interSectionHeight,
+  ];
 
   let interSectionArea = interSectionWidth * interSectionHeight;
   // console.log("interSectionArea: ", interSectionArea);
@@ -105,23 +115,20 @@ export function findIntersection() {
 export function calculateIOU() {
   // get the intersection of the two rectangles
   let findInter = findIntersection();
-  let interArea = findInter.interSectionArea;
-  console.log("interSection area: ", interArea);
+  let intersectionArea = findInter.interSectionArea;
+  // console.log("interSection area: ", interArea);
 
-  //get the union of the two rectangles
+  // get the union of the two rectangles
   // 1. calculate the area of the individual boxes
-  // parameters: x and y start, width of box, height of box
-  // const groundTruth = [50, 120, 357, 445];
-  // const AWSbox = [60, 145, 358, 443];
+  let areaAWS = AWS_finalWidth * AWS_finalHeight;
+  let groundTruthArea = ground_width * ground_height;
+  let bothAreas = areaAWS + groundTruthArea;
 
-  let areaAWS = 358 * 443;
-  let areaGroundTruth = 357 * 445;
-  let both = areaAWS + areaGroundTruth;
   // union is the union minus the part which is included in both rectangles,
   // otherwise we would have the intersection area twice
-  let union = both - interArea;
+  let union = bothAreas - intersectionArea;
 
   // divide intersection / union
-  let IOU = interArea / union;
+  let IOU = intersectionArea / union;
   console.log("IOU: ", IOU);
 }

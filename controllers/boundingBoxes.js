@@ -5,16 +5,9 @@ import {
   imageHeight,
   AWS_height,
   AWS_width,
-  AWS_yStart,
-  AWS_xStart,
   BoundingBoxes,
 } from "./functionality.js";
-
-// ground truth coordinates for testImage.jpeg
-let ground_xStart;
-let ground_yStart;
-let ground_width;
-let ground_height;
+import { groundTruth_IMG_2150 } from "../helper/groundTruths.js";
 
 export function drawBoundingBoxes() {
   const canvas = createCanvas(imageWidth, imageHeight);
@@ -24,10 +17,9 @@ export function drawBoundingBoxes() {
     context.drawImage(image, 0, 0);
     console.log("IMAGE WIDTH FROM DRAWIMAGE: ", image.width);
 
+    // draw AWS bounding boxes
     BoundingBoxes.forEach((box) => {
-      console.log("box from drawImage:", box);
-      console.log("leftcoordinate from drawImage:", box.leftCoordinate);
-      // the bounding box from AWS -> implement
+      // console.log("box from drawImage:", box);
       context.beginPath();
       // parameters: x and y start, width of box, height of box
       context.rect(
@@ -36,64 +28,42 @@ export function drawBoundingBoxes() {
         box.AWS_width,
         box.AWS_height
       );
-      context.lineWidth = 4;
+      context.lineWidth = 10;
       context.strokeStyle = "yellow";
       context.stroke();
     });
 
-    // // image is testImage.jpeg
-    // if (image.width == 600) {
-    //   ground_xStart = 50;
-    //   ground_yStart = 120;
-    //   ground_width = 357;
-    //   ground_height = 445;
-    // }
-
-    // if image is IMG_2510
-    // draw ground truth
+    // if image is IMG_2510 (come up with a better criteria)
+    // Draw the ground truth bounding boxes
     if (image.width == 800) {
-      // ground truth for label "Monitor"
-      ground_xStart = 131;
-      ground_yStart = 180;
-      ground_width = 586;
-      ground_height = 335;
-
-      context.beginPath();
-      context.rect(ground_xStart, ground_yStart, ground_width, ground_height);
-      context.lineWidth = 4;
-      context.strokeStyle = "red";
-      context.stroke();
-
-      // ground truth for label "Laptop"
-      ground_xStart = 140;
-      ground_yStart = 520;
-      ground_height = 362;
-      ground_width = 413;
-
-      context.beginPath();
-      context.rect(ground_xStart, ground_yStart, ground_width, ground_height);
-      context.lineWidth = 4;
-      context.strokeStyle = "red";
-      context.stroke();
+      groundTruth_IMG_2150.forEach((i) => {
+        context.beginPath();
+        context.rect(i.xStart, i.yStart, i.width, i.height);
+        context.lineWidth = 10;
+        context.strokeStyle = "red";
+        context.stroke();
+      });
     }
 
-    // // the bounding box from AWS -> implement
-    // context.beginPath();
-    // // parameters: x and y start, width of box, height of box
-    // context.rect(AWS_xStart, AWS_yStart, AWS_width, AWS_height);
-    // context.lineWidth = 7;
-    // context.strokeStyle = "yellow";
-    // context.stroke();
-
-    // get the intersection area
-    // let findInter = findIntersection();
-    // let i = findInter.interSection;
-    // // draw the intersection rectangle
-    // context.beginPath();
-    // context.rect(i[0], i[1], i[2], i[3]);
-    // context.lineWidth = 7;
-    // context.strokeStyle = "blue";
-    // context.stroke();
+    // get array with intersection rectangles
+    let findInter = findIntersection();
+    let rectangles = findInter.interSectionCoordinates;
+    // draw the intersection rectangles
+    rectangles.forEach((r) => {
+      // console.log("intersection rectangle:", r);
+      context.beginPath();
+      context.rect(
+        r.intersection_xStart,
+        r.intersection_yStart,
+        r.interSectionWidth,
+        r.interSectionHeight
+      );
+      context.lineWidth = 4;
+      context.strokeStyle = "blue";
+      // context.fillStyle = "blue";
+      // context.fill();
+      context.stroke();
+    });
 
     const buffer = canvas.toBuffer("image/png");
     fs.writeFileSync("./boundingBoxImage.png", buffer);
@@ -102,79 +72,122 @@ export function drawBoundingBoxes() {
 
 // https://www.geeksforgeeks.org/intersecting-rectangle-when-bottom-left-and-top-right-corners-of-two-rectangles-are-given/
 export function findIntersection() {
-  let interSection = [];
+  let interSectionCoordinates = [];
 
-  // AWS bounding box
-  const x1 = AWS_xStart;
-  const y1 = AWS_yStart + AWS_height;
-  const x2 = AWS_xStart + AWS_width;
-  const y2 = AWS_yStart;
+  // coordinates for the intersection rectangle
+  let intersection_xStart;
+  let intersection_yStart;
+  let interSectionWidth;
+  let interSectionHeight;
 
-  // "ground truth"
-  const x3 = ground_xStart;
-  const y3 = ground_yStart + ground_height;
-  const x4 = ground_xStart + ground_width;
-  const y4 = ground_yStart;
+  // combine two arrays of objects into one array of arrays
+  const zip = (a1, a2) => a1.map((x, i) => [x, a2[i]]);
 
-  // get bottom-left point of intersection rectangle
-  var x5 = Math.max(x1, x3);
-  var y5 = Math.min(y1, y3); // this was changed from the original to min
+  // combine AWS bounding boxes and their respective ground truths into one array
+  const bb_groundTruth_combined = zip(groundTruth_IMG_2150, BoundingBoxes);
+  console.log("COMBINED ARRAY: ", bb_groundTruth_combined);
 
-  // gives top-right point of intersection rectangle
-  var x6 = Math.min(x2, x4);
-  var y6 = Math.max(y2, y4); // this was changed from the original to max
+  // area of the intersection rectangle
+  let interSectionArea;
 
-  // gives top left point of intersection rectangle
-  var x7 = x5;
-  var y7 = y6;
+  // array for the intersection area values for all bounding boxes
+  let interSectionArray = [];
 
-  // gives bottom right point of intersection rectangle
-  var x8 = x6;
-  var y8 = y5;
+  // for each object in the bounding box & ground truth array
+  bb_groundTruth_combined.forEach((i) => {
+    // console.log("bb_groundTruth_combined: ", i);
 
-  // data needed for drawing the rectangle
-  // x7 is the x starting point, y7 the y starting point
-  let intersection_xStart = x7;
-  let intersection_yStart = y7;
-  let interSectionWidth = x8 - x7;
-  let interSectionHeight = y8 - y7;
+    // ground truth coordinates
+    let x1 = i[0].xStart;
+    let y1 = i[0].yStart + i[0].height;
+    let x2 = i[0].xStart + i[0].width;
+    let y2 = i[0].yStart;
 
-  interSection = [
-    intersection_xStart,
-    intersection_yStart,
-    interSectionWidth,
-    interSectionHeight,
-  ];
+    // AWS coordinates
+    let x3 = i[1].AWS_xStart;
+    let y3 = i[1].AWS_yStart + i[1].AWS_height;
+    let x4 = i[1].AWS_xStart + i[1].AWS_width;
+    let y4 = i[1].AWS_yStart;
 
-  let interSectionArea = interSectionWidth * interSectionHeight;
-  // console.log("interSectionArea: ", interSectionArea);
-  // console.log("interSection Array: ", interSection);
+    // get bottom-left point of intersection rectangle
+    let x5 = Math.max(x1, x3);
+    let y5 = Math.min(y1, y3); // this was changed from the original to min
+
+    // gives top-right point of intersection rectangle
+    let x6 = Math.min(x2, x4);
+    let y6 = Math.max(y2, y4); // this was changed from the original to max
+
+    // gives top left point of intersection rectangle
+    let x7 = x5;
+    let y7 = y6;
+
+    // gives bottom right point of intersection rectangle
+    let x8 = x6;
+    let y8 = y5;
+
+    // data needed for drawing the rectangle
+    // x7 is the x starting point, y7 the y starting point
+    intersection_xStart = x7;
+    intersection_yStart = y7;
+    interSectionWidth = x8 - x7;
+    interSectionHeight = y8 - y7;
+
+    interSectionCoordinates.push({
+      intersection_xStart,
+      intersection_yStart,
+      interSectionWidth,
+      interSectionHeight,
+    });
+
+    console.log("interSectionCoordinates array: ", interSectionCoordinates);
+
+    interSectionArea = interSectionWidth * interSectionHeight;
+
+    interSectionArray.push({ interSectionArea });
+  });
 
   // if (x5 > x6 || y5 > y6) {
   //   console.log("NO INTERSECTION FOUND!!!");
   // }
 
-  return { interSection, interSectionArea };
+  return { interSectionCoordinates, interSectionArray };
 }
 
 // https://medium.com/analytics-vidhya/iou-intersection-over-union-705a39e7acef
 export function calculateIOU() {
   // get the intersection of the two rectangles
   let findInter = findIntersection();
-  let intersectionArea = findInter.interSectionArea;
+  let intersectionArray = findInter.interSectionArray;
   // console.log("interSection area: ", interArea);
+
+  let groundTruthArea;
+  let areaAWS;
+  let bothAreas;
+  let union;
+
+  // for each ground truth
+  groundTruth_IMG_2150.forEach((i) => {
+    areaAWS = AWS_width * AWS_height;
+    groundTruthArea = i.width * i.height;
+    bothAreas = areaAWS + groundTruthArea;
+    union = bothAreas - intersectionArray[i];
+
+    // divide intersection / union
+    let IOU = intersectionArray[i] / union;
+    console.log("IOU: ", IOU);
+  });
 
   // get the union of the two rectangles
   // 1. calculate the area of the individual boxes
-  let areaAWS = AWS_width * AWS_height;
-  let groundTruthArea = ground_width * ground_height;
-  let bothAreas = areaAWS + groundTruthArea;
+  // let areaAWS = AWS_width * AWS_height;
+  //let groundTruthArea = ground_width * ground_height;
+  // let bothAreas = areaAWS + groundTruthArea;
 
   // union is the union minus the part which is included in both rectangles,
   // otherwise we would have the intersection area twice
-  let union = bothAreas - intersectionArea;
+  // let union = bothAreas - intersectionArea;
 
   // divide intersection / union
-  let IOU = intersectionArea / union;
-  console.log("IOU: ", IOU);
+  // let IOU = intersectionArea / union;
+  // console.log("IOU: ", IOU);
 }

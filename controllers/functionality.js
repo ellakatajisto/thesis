@@ -72,7 +72,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     labelArr = [];
     // get the labels detected from the image
     response.Labels.forEach((result) => labelArr.push(result.Name));
-    console.log("labels found: ", labelArr);
+    // console.log("labels found: ", labelArr);
 
     // get dimension of the request image
     var dimensions = sizeOf(buffer);
@@ -118,17 +118,17 @@ router.post("/", upload.array("files"), async (req, res) => {
       }
     });
 
-    console.log(
-      "AWS bounding box: ",
-      "AWS_height: ",
-      AWS_height,
-      "AWS_width: ",
-      AWS_width,
-      "AWS_yStart: ",
-      AWS_yStart,
-      "AWS_xStart: ",
-      AWS_xStart
-    );
+    // console.log(
+    //   "AWS bounding box: ",
+    //   "AWS_height: ",
+    //   AWS_height,
+    //   "AWS_width: ",
+    //   AWS_width,
+    //   "AWS_yStart: ",
+    //   AWS_yStart,
+    //   "AWS_xStart: ",
+    //   AWS_xStart
+    // );
 
     // Draw bounding boxes, calculate IOU
     drawBoundingBoxes();
@@ -142,7 +142,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     // Write labels into the image metadata
     editMetadata(image);
 
-    console.log("BoundingBoxes: ", BoundingBoxes);
+    // console.log("BoundingBoxes: ", BoundingBoxes);
     // console.log("response: ", response);
 
     // call the checkCategories function here

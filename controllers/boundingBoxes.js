@@ -3,17 +3,18 @@ import fs from "fs";
 import {
   imageWidth,
   imageHeight,
-  AWS_finalHeight,
-  AWS_finalWidth,
+  AWS_height,
+  AWS_width,
   AWS_yStart,
   AWS_xStart,
+  BoundingBoxes,
 } from "./functionality.js";
 
-// ground truth coordinates for person image
-let ground_xStart = 50;
-let ground_yStart = 120;
-let ground_width = 357;
-let ground_height = 445;
+// ground truth coordinates for testImage.jpeg
+let ground_xStart;
+let ground_yStart;
+let ground_width;
+let ground_height;
 
 export function drawBoundingBoxes() {
   const canvas = createCanvas(imageWidth, imageHeight);
@@ -21,36 +22,81 @@ export function drawBoundingBoxes() {
 
   loadImage("downloadImage.jpeg").then((image) => {
     context.drawImage(image, 0, 0);
+    console.log("IMAGE WIDTH FROM DRAWIMAGE: ", image.width);
 
-    // the bounding box from AWS -> implement
-    context.beginPath();
-    // parameters: x and y start, width of box, height of box
-    context.rect(AWS_xStart, AWS_yStart, AWS_finalWidth, AWS_finalHeight);
-    context.lineWidth = 7;
-    context.strokeStyle = "yellow";
-    context.stroke();
+    BoundingBoxes.forEach((box) => {
+      console.log("box from drawImage:", box);
+      console.log("leftcoordinate from drawImage:", box.leftCoordinate);
+      // the bounding box from AWS -> implement
+      context.beginPath();
+      // parameters: x and y start, width of box, height of box
+      context.rect(
+        box.AWS_xStart,
+        box.AWS_yStart,
+        box.AWS_width,
+        box.AWS_height
+      );
+      context.lineWidth = 4;
+      context.strokeStyle = "yellow";
+      context.stroke();
+    });
 
-    // ground truth -> implement
-    context.beginPath();
-    context.rect(ground_xStart, ground_yStart, ground_width, ground_height);
-    context.lineWidth = 3;
-    context.strokeStyle = "red";
-    context.stroke();
+    // // image is testImage.jpeg
+    // if (image.width == 600) {
+    //   ground_xStart = 50;
+    //   ground_yStart = 120;
+    //   ground_width = 357;
+    //   ground_height = 445;
+    // }
+
+    // if image is IMG_2510
+    // draw ground truth
+    if (image.width == 800) {
+      // ground truth for label "Monitor"
+      ground_xStart = 131;
+      ground_yStart = 180;
+      ground_width = 586;
+      ground_height = 335;
+
+      context.beginPath();
+      context.rect(ground_xStart, ground_yStart, ground_width, ground_height);
+      context.lineWidth = 4;
+      context.strokeStyle = "red";
+      context.stroke();
+
+      // ground truth for label "Laptop"
+      ground_xStart = 140;
+      ground_yStart = 520;
+      ground_height = 362;
+      ground_width = 413;
+
+      context.beginPath();
+      context.rect(ground_xStart, ground_yStart, ground_width, ground_height);
+      context.lineWidth = 4;
+      context.strokeStyle = "red";
+      context.stroke();
+    }
+
+    // // the bounding box from AWS -> implement
+    // context.beginPath();
+    // // parameters: x and y start, width of box, height of box
+    // context.rect(AWS_xStart, AWS_yStart, AWS_width, AWS_height);
+    // context.lineWidth = 7;
+    // context.strokeStyle = "yellow";
+    // context.stroke();
 
     // get the intersection area
-    let findInter = findIntersection();
-    let i = findInter.interSection;
-    // draw the intersection rectangle
-    context.beginPath();
-    context.rect(i[0], i[1], i[2], i[3]);
-    context.lineWidth = 7;
-    // context.fillStyle = "blue";
-    // context.fill();
-    context.strokeStyle = "blue";
-    context.stroke();
+    // let findInter = findIntersection();
+    // let i = findInter.interSection;
+    // // draw the intersection rectangle
+    // context.beginPath();
+    // context.rect(i[0], i[1], i[2], i[3]);
+    // context.lineWidth = 7;
+    // context.strokeStyle = "blue";
+    // context.stroke();
 
     const buffer = canvas.toBuffer("image/png");
-    fs.writeFileSync("./image.png", buffer);
+    fs.writeFileSync("./boundingBoxImage.png", buffer);
   });
 }
 
@@ -60,8 +106,8 @@ export function findIntersection() {
 
   // AWS bounding box
   const x1 = AWS_xStart;
-  const y1 = AWS_yStart + AWS_finalHeight;
-  const x2 = AWS_xStart + AWS_finalWidth;
+  const y1 = AWS_yStart + AWS_height;
+  const x2 = AWS_xStart + AWS_width;
   const y2 = AWS_yStart;
 
   // "ground truth"
@@ -120,7 +166,7 @@ export function calculateIOU() {
 
   // get the union of the two rectangles
   // 1. calculate the area of the individual boxes
-  let areaAWS = AWS_finalWidth * AWS_finalHeight;
+  let areaAWS = AWS_width * AWS_height;
   let groundTruthArea = ground_width * ground_height;
   let bothAreas = areaAWS + groundTruthArea;
 

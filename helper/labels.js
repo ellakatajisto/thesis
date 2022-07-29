@@ -15,6 +15,20 @@ export const officeLabels = [
   "Whiteboard",
 ];
 
+export const computerValues = [
+  "Computer Keyboard",
+  "Computer",
+  "Pc",
+  "Computer Hardware",
+  "Screen",
+  "Computer Keyboard",
+  "Monitor",
+  "Display",
+  "Laptop",
+  "Electronics",
+  "Hardware",
+];
+
 export const footballLabels = [
   "Ballplayer",
   "Ball",

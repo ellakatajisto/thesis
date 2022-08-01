@@ -40,3 +40,12 @@ export const groundTruth_IMG_2145 = [
     width: 411,
   },
 ];
+
+export const groundTruth_IMG_9783 = [
+  {
+    xStart: 1,
+    yStart: 1,
+    height: 1,
+    width: 1,
+  },
+];

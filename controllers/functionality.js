@@ -22,8 +22,8 @@ const rekognitionClient = new RekognitionClient({ region: "eu-central-1" });
 // array for the labels
 export let labelArr = [];
 
-// variable for the input image
-export let image;
+// input image fileName
+export let requestImage;
 
 // variables for the width and height of the input image
 export let imageWidth;
@@ -53,17 +53,22 @@ export let BoundingBoxes = [];
 router.post("/", upload.array("files"), async (req, res) => {
   try {
     buffer = req.files[0].buffer; // error handling here
+    console.log("req.files[0]: ", req.files[0].originalname);
 
     // initialize arrays that contain image data as empty
     BoundingBoxes.length = 0;
     labelArr.length = 0;
 
     // save the file from the request into the filesystem
-    fs.writeFile("downloadImage.jpeg", buffer, function (err) {
-      if (err) throw err;
-      console.log("file saved");
-    });
-    image = "downloadImage.jpeg";
+    fs.writeFile(
+      `download_${req.files[0].originalname}`,
+      buffer,
+      function (err) {
+        if (err) throw err;
+        // console.log("file saved");
+      }
+    );
+    requestImage = `download_${req.files[0].originalname}`;
 
     // Detects instances of real-world entities within an image as input.
     const detectLabelsCommand = new DetectLabelsCommand({
@@ -72,8 +77,6 @@ router.post("/", upload.array("files"), async (req, res) => {
 
     // sends the detectLabelsCommand to the client
     const response = await rekognitionClient.send(detectLabelsCommand);
-    // initialise labelArr as empty (remove labels from last image)
-    labelArr = [];
     // get the labels detected from the image
     response.Labels.forEach((result) => labelArr.push(result.Name));
     // console.log("labels found: ", labelArr);
@@ -90,6 +93,8 @@ router.post("/", upload.array("files"), async (req, res) => {
         intersection.push(label.Name);
       }
     });
+
+    console.log("intersection array: ", intersection);
 
     // loop through all labels
     response.Labels.forEach((label) => {
@@ -122,17 +127,17 @@ router.post("/", upload.array("files"), async (req, res) => {
       }
     });
 
-    // console.log(
-    //   "AWS bounding box: ",
-    //   "AWS_height: ",
-    //   AWS_height,
-    //   "AWS_width: ",
-    //   AWS_width,
-    //   "AWS_yStart: ",
-    //   AWS_yStart,
-    //   "AWS_xStart: ",
-    //   AWS_xStart
-    // );
+    console.log(
+      "AWS bounding box: ",
+      "AWS_height: ",
+      AWS_height,
+      "AWS_width: ",
+      AWS_width,
+      "AWS_yStart: ",
+      AWS_yStart,
+      "AWS_xStart: ",
+      AWS_xStart
+    );
 
     // Draw bounding boxes
     drawBoundingBoxes();
@@ -144,7 +149,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     calculateIOU();
 
     // Write labels into the image metadata
-    editMetadata(image);
+    editMetadata(requestImage);
 
     // console.log("BoundingBoxes: ", BoundingBoxes);
     // console.log("response: ", response);

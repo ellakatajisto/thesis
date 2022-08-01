@@ -4,7 +4,7 @@ import { labelArr } from "./functionality.js";
 
 export function editMetadata(image) {
   try {
-    console.log("labelArr from exifTool function: ", labelArr);
+    // console.log("labelArr from exifTool function: ", labelArr);
     const ep = new exiftool.ExiftoolProcess(exiftoolBin);
 
     ep.open()

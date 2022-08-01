@@ -6,25 +6,23 @@ import {
   AWS_height,
   AWS_width,
   BoundingBoxes,
+  requestImage,
 } from "./functionality.js";
 import {
   groundTruth_IMG_2150,
   groundTruth_IMG_2145,
+  groundTruth_IMG_9783,
 } from "../helper/groundTruths.js";
 
-// helper function: combine two arrays of objects into one array of arrays
-const zip = (a1, a2) => a1.map((x, i) => [x, a2[i]]);
-
 // which ground truth set is being used for the current image
-let groundTruthArray;
+let groundTruthArray = [];
 
 export function drawBoundingBoxes() {
   const canvas = createCanvas(imageWidth, imageHeight);
   const context = canvas.getContext("2d");
 
-  loadImage("downloadImage.jpeg").then((image) => {
+  loadImage(requestImage).then((image) => {
     context.drawImage(image, 0, 0);
-    console.log("IMAGE WIDTH FROM DRAWIMAGE: ", image.width);
 
     // draw AWS bounding boxes
     BoundingBoxes.forEach((box) => {
@@ -42,9 +40,11 @@ export function drawBoundingBoxes() {
       context.stroke();
     });
 
-    // if image is IMG_2510 (come up with a better criteria)
+    // take the ground truths for an image
+    // if the ground truth for the image name doesn't exist -> only show AWS boxes
+
     // Draw the ground truth bounding boxes
-    if (image.width == 800) {
+    if (requestImage == "download_IMG_2150.jpg") {
       groundTruthArray = groundTruth_IMG_2150;
       groundTruth_IMG_2150.forEach((i) => {
         context.beginPath();
@@ -53,9 +53,18 @@ export function drawBoundingBoxes() {
         context.strokeStyle = "red";
         context.stroke();
       });
-    } else if ((image.width = 1000)) {
+    } else if (requestImage == "download_IMG_2145.jpg") {
       groundTruthArray = groundTruth_IMG_2145;
       groundTruth_IMG_2145.forEach((i) => {
+        context.beginPath();
+        context.rect(i.xStart, i.yStart, i.width, i.height);
+        context.lineWidth = 10;
+        context.strokeStyle = "red";
+        context.stroke();
+      });
+    } else if (requestImage == "download_IMG_9783.jpg") {
+      groundTruthArray = groundTruth_IMG_9783;
+      groundTruth_IMG_9783.forEach((i) => {
         context.beginPath();
         context.rect(i.xStart, i.yStart, i.width, i.height);
         context.lineWidth = 10;
@@ -100,6 +109,9 @@ export function findIntersection() {
   let intersection_yStart;
   let interSectionWidth;
   let interSectionHeight;
+
+  // helper function: combine two arrays of objects into one array of arrays
+  const zip = (a1, a2) => a1.map((x, i) => [x, a2[i]]);
 
   // combine AWS bounding boxes and their respective ground truths into one array
   let bb_groundTruth_combined = [];
@@ -185,7 +197,7 @@ export function calculateIOU() {
   let union;
 
   // for each ground truth
-  groundTruth_IMG_2150.forEach((i) => {
+  groundTruthArray.forEach((i) => {
     areaAWS = AWS_width * AWS_height;
     groundTruthArea = i.width * i.height;
     bothAreas = areaAWS + groundTruthArea;

@@ -7,7 +7,16 @@ import {
   AWS_width,
   BoundingBoxes,
 } from "./functionality.js";
-import { groundTruth_IMG_2150 } from "../helper/groundTruths.js";
+import {
+  groundTruth_IMG_2150,
+  groundTruth_IMG_2145,
+} from "../helper/groundTruths.js";
+
+// helper function: combine two arrays of objects into one array of arrays
+const zip = (a1, a2) => a1.map((x, i) => [x, a2[i]]);
+
+// which ground truth set is being used for the current image
+let groundTruthArray;
 
 export function drawBoundingBoxes() {
   const canvas = createCanvas(imageWidth, imageHeight);
@@ -36,6 +45,7 @@ export function drawBoundingBoxes() {
     // if image is IMG_2510 (come up with a better criteria)
     // Draw the ground truth bounding boxes
     if (image.width == 800) {
+      groundTruthArray = groundTruth_IMG_2150;
       groundTruth_IMG_2150.forEach((i) => {
         context.beginPath();
         context.rect(i.xStart, i.yStart, i.width, i.height);
@@ -43,6 +53,17 @@ export function drawBoundingBoxes() {
         context.strokeStyle = "red";
         context.stroke();
       });
+    } else if ((image.width = 1000)) {
+      groundTruthArray = groundTruth_IMG_2145;
+      groundTruth_IMG_2145.forEach((i) => {
+        context.beginPath();
+        context.rect(i.xStart, i.yStart, i.width, i.height);
+        context.lineWidth = 10;
+        context.strokeStyle = "red";
+        context.stroke();
+      });
+    } else {
+      console.log("No ground truths found for this image!");
     }
 
     // get array with intersection rectangles
@@ -80,11 +101,9 @@ export function findIntersection() {
   let interSectionWidth;
   let interSectionHeight;
 
-  // combine two arrays of objects into one array of arrays
-  const zip = (a1, a2) => a1.map((x, i) => [x, a2[i]]);
-
   // combine AWS bounding boxes and their respective ground truths into one array
-  const bb_groundTruth_combined = zip(groundTruth_IMG_2150, BoundingBoxes);
+  let bb_groundTruth_combined = [];
+  bb_groundTruth_combined = zip(groundTruthArray, BoundingBoxes);
   console.log("COMBINED ARRAY: ", bb_groundTruth_combined);
 
   // area of the intersection rectangle
@@ -155,7 +174,7 @@ export function findIntersection() {
 
 // https://medium.com/analytics-vidhya/iou-intersection-over-union-705a39e7acef
 export function calculateIOU() {
-  // get the intersection of the two rectangles
+  // get the intersection areas for all AWS predictions and their ground truths in the image
   let findInter = findIntersection();
   let intersectionArray = findInter.interSectionArray;
   // console.log("interSection area: ", interArea);

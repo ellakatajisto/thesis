@@ -16,3 +16,27 @@ export const groundTruth_IMG_2150 = [
     width: 413,
   },
 ];
+
+export const groundTruth_IMG_2145 = [
+  // ground truth for label "Computer Keyboard"
+  {
+    xStart: 591,
+    yStart: 774,
+    height: 111,
+    width: 364,
+  },
+  // ground truth for label "Monitor"
+  {
+    xStart: 90,
+    yStart: 381,
+    height: 350,
+    width: 600,
+  },
+  // ground truth for label "Laptop"
+  {
+    xStart: 559,
+    yStart: 514,
+    height: 538,
+    width: 411,
+  },
+];

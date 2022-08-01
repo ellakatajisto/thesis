@@ -54,6 +54,10 @@ router.post("/", upload.array("files"), async (req, res) => {
   try {
     buffer = req.files[0].buffer; // error handling here
 
+    // initialize arrays that contain image data as empty
+    BoundingBoxes.length = 0;
+    labelArr.length = 0;
+
     // save the file from the request into the filesystem
     fs.writeFile("downloadImage.jpeg", buffer, function (err) {
       if (err) throw err;
@@ -130,7 +134,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     //   AWS_xStart
     // );
 
-    // Draw bounding boxes, calculate IOU
+    // Draw bounding boxes
     drawBoundingBoxes();
 
     // find Intersection of the two rectangles

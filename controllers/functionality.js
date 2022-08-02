@@ -9,11 +9,11 @@ import {
   drawBoundingBoxes,
   findIntersection,
   calculateIOU,
-  determineGroundTruthArray,
 } from "./BoundingBoxes.js";
 import { editMetadata } from "./exifTool.js";
 import fs from "fs";
 import { computerValues } from "../helper/labels.js";
+import { determineGroundTruthArray, groundTruthArray } from "./groundTruth.js";
 
 // import { checkCategories } from "./imageCategories.js";
 const router = express.Router();
@@ -48,17 +48,15 @@ let leftCoordinate;
 // label of the object of the bounding box
 let objectLabel;
 
-// function saveFile(file, buffer) {}
-
 // array for the bounding box for detected object
-export let BoundingBoxes = [];
+export let boundingBoxes = [];
 
 router.post("/", upload.array("files"), async (req, res) => {
   try {
     buffer = req.files[0].buffer; // error handling here
 
     // initialize arrays that contain image data as empty
-    BoundingBoxes.length = 0;
+    boundingBoxes.length = 0;
     labelArr.length = 0;
 
     // save the file from the request into the filesystem
@@ -128,7 +126,7 @@ router.post("/", upload.array("files"), async (req, res) => {
             AWS_xStart = leftCoordinate * imageWidth;
 
             // push all instances of an object into the bounding box array
-            BoundingBoxes.push({
+            boundingBoxes.push({
               objectLabel,
               AWS_height,
               AWS_yStart,
@@ -140,14 +138,14 @@ router.post("/", upload.array("files"), async (req, res) => {
       }
     });
 
-    console.log("Bounding boxes array: ", BoundingBoxes);
-    if (BoundingBoxes.length > 0) {
+    console.log("Bounding boxes array: ", boundingBoxes);
+    if (boundingBoxes.length > 0) {
       // determine which ground truth array is being used
       determineGroundTruthArray(requestImage);
       // find Intersection of each AWS bounding box and ground truth
-      findIntersection();
+      findIntersection(groundTruthArray);
       // Draw bounding boxes
-      drawBoundingBoxes();
+      drawBoundingBoxes(groundTruthArray);
       // calculate the IOU for each bounding box and ground truth
       calculateIOU();
       // Write labels into the image metadata

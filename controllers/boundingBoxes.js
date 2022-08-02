@@ -3,17 +3,10 @@ import fs from "fs";
 import {
   imageWidth,
   imageHeight,
-  BoundingBoxes,
+  boundingBoxes,
   requestImage,
+  // groundTruthArray,
 } from "./functionality.js";
-import {
-  groundTruth_IMG_2150,
-  groundTruth_IMG_2145,
-  groundTruth_IMG_9783,
-} from "../helper/groundTruths.js";
-
-// which ground truth set is being used for the current image
-let groundTruthArray = [];
 
 // variable for the intersection area
 let interSectionArea;
@@ -30,22 +23,7 @@ let bb_groundTruth_combined = [];
 // array for the IOU values
 let IOU_array = [];
 
-export function determineGroundTruthArray(requestImage) {
-  groundTruthArray.length = 0;
-  // console.log("request image from determine ground truth: ", requestImage);
-  if (requestImage == "download_IMG_2150.jpg") {
-    groundTruthArray = groundTruth_IMG_2150;
-  } else if (requestImage == "download_IMG_2145.jpg") {
-    groundTruthArray = groundTruth_IMG_2145;
-    // } else if (requestImage == "download_IMG_9783.jpg") {
-    //   groundTruthArray = groundTruth_IMG_9783;
-  } else {
-    console.log("no ground truths found!");
-  }
-  console.log("groundTruthArray is: ", groundTruthArray);
-}
-
-export function drawBoundingBoxes() {
+export function drawBoundingBoxes(groundTruthArray) {
   const canvas = createCanvas(imageWidth, imageHeight);
   const context = canvas.getContext("2d");
 
@@ -53,7 +31,7 @@ export function drawBoundingBoxes() {
     context.drawImage(image, 0, 0);
 
     // draw AWS bounding boxes
-    BoundingBoxes.forEach((box) => {
+    boundingBoxes.forEach((box) => {
       // console.log("box from drawImage:", box);
       context.beginPath();
       // parameters: x and y start, width of box, height of box
@@ -105,7 +83,7 @@ export function drawBoundingBoxes() {
 }
 
 // https://www.geeksforgeeks.org/intersecting-rectangle-when-bottom-left-and-top-right-corners-of-two-rectangles-are-given/
-export function findIntersection() {
+export function findIntersection(groundTruthArray) {
   // coordinates for the intersection rectangle
   let intersection_xStart;
   let intersection_yStart;
@@ -120,7 +98,7 @@ export function findIntersection() {
   const zip = (a1, a2) => a1.map((x, i) => [x, a2[i]]);
 
   // if ((BoundingBoxes.length = !0)) {
-  bb_groundTruth_combined = zip(groundTruthArray, BoundingBoxes);
+  bb_groundTruth_combined = zip(groundTruthArray, boundingBoxes);
   console.log("COMBINED ARRAY: ", bb_groundTruth_combined);
   // } else {
   //   console.log("There were no bounding boxes found in this image.");

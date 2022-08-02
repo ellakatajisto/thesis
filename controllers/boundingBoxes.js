@@ -31,13 +31,14 @@ let bb_groundTruth_combined = [];
 let IOU_array = [];
 
 export function determineGroundTruthArray(requestImage) {
+  groundTruthArray.length = 0;
   // console.log("request image from determine ground truth: ", requestImage);
   if (requestImage == "download_IMG_2150.jpg") {
     groundTruthArray = groundTruth_IMG_2150;
   } else if (requestImage == "download_IMG_2145.jpg") {
     groundTruthArray = groundTruth_IMG_2145;
-  } else if (requestImage == "download_IMG_9783.jpg") {
-    groundTruthArray = groundTruth_IMG_9783;
+    // } else if (requestImage == "download_IMG_9783.jpg") {
+    //   groundTruthArray = groundTruth_IMG_9783;
   } else {
     console.log("no ground truths found!");
   }
@@ -197,6 +198,7 @@ export function calculateIOU() {
 
   // for each ground truth and AWS bounding box
   bb_groundTruth_combined.forEach((i, index) => {
+    // assign index of interSectionArray to the looped array in order to loop both at the same time
     let interSect = interSectionArray[index];
     areaAWS = i[1].AWS_width * i[1].AWS_height;
     groundTruthArea = i[0].width * i[0].height;

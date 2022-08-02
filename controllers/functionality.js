@@ -48,6 +48,8 @@ let leftCoordinate;
 // label of the object of the bounding box
 let objectLabel;
 
+// function saveFile(file, buffer) {}
+
 // array for the bounding box for detected object
 export let BoundingBoxes = [];
 
@@ -60,6 +62,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     labelArr.length = 0;
 
     // save the file from the request into the filesystem
+    // saveFile(req.files[0], buffer);
     fs.writeFile(
       `download_${req.files[0].originalname}`,
       buffer,
@@ -69,7 +72,7 @@ router.post("/", upload.array("files"), async (req, res) => {
       }
     );
     requestImage = `download_${req.files[0].originalname}`;
-    console.log("requestImage: ", requestImage);
+    // console.log("requestImage: ", requestImage);
 
     // Detects instances of real-world entities within an image as input.
     const detectLabelsCommand = new DetectLabelsCommand({
@@ -78,10 +81,12 @@ router.post("/", upload.array("files"), async (req, res) => {
 
     // sends the detectLabelsCommand to the client
     const response = await rekognitionClient.send(detectLabelsCommand);
+
     // get the labels detected from the image
     response.Labels.forEach((result) => labelArr.push(result.Name));
+
     // console.log("labels found: ", labelArr);
-    res.send(response.Labels ?? "No labels detected from the image!");
+    // res.send(response.Labels ?? "No labels detected from the image!");
 
     // get dimension of the request image
     var dimensions = sizeOf(buffer);
@@ -103,68 +108,55 @@ router.post("/", upload.array("files"), async (req, res) => {
       // if label is found in intersection
       if (intersection.includes(label.Name)) {
         // loop through all instances of a label
-        label.Instances.forEach((instance) => {
-          console.log("label.Instances from the loop:", instance);
-          // assign values
-          objectLabel = label.Name;
-          bb_height = instance.BoundingBox.Height;
-          bb_width = instance.BoundingBox.Width;
-          topCoordinate = instance.BoundingBox.Top;
-          leftCoordinate = instance.BoundingBox.Left;
+        if (label.Instances.length == 0) {
+          console.log(
+            `No bounding boxes provided for recognised object: ${label.Name}`
+          );
+        } else {
+          label.Instances.forEach((instance) => {
+            // assign values
+            objectLabel = label.Name;
+            bb_height = instance.BoundingBox.Height;
+            bb_width = instance.BoundingBox.Width;
+            topCoordinate = instance.BoundingBox.Top;
+            leftCoordinate = instance.BoundingBox.Left;
 
-          // get the location of the bounding box in pixels
-          AWS_height = bb_height * imageHeight;
-          AWS_width = bb_width * imageWidth;
-          AWS_yStart = topCoordinate * imageHeight;
-          AWS_xStart = leftCoordinate * imageWidth;
+            // get the location of the bounding box in pixels
+            AWS_height = bb_height * imageHeight;
+            AWS_width = bb_width * imageWidth;
+            AWS_yStart = topCoordinate * imageHeight;
+            AWS_xStart = leftCoordinate * imageWidth;
 
-          // push all instances of an object into the bounding box array
-          BoundingBoxes.push({
-            objectLabel,
-            AWS_height,
-            AWS_yStart,
-            AWS_xStart,
-            AWS_width,
+            // push all instances of an object into the bounding box array
+            BoundingBoxes.push({
+              objectLabel,
+              AWS_height,
+              AWS_yStart,
+              AWS_xStart,
+              AWS_width,
+            });
           });
-        });
+        }
       }
     });
 
-    console.log(
-      "AWS bounding box: ",
-      "AWS_height: ",
-      AWS_height,
-      "AWS_width: ",
-      AWS_width,
-      "AWS_yStart: ",
-      AWS_yStart,
-      "AWS_xStart: ",
-      AWS_xStart
-    );
+    console.log("Bounding boxes array: ", BoundingBoxes);
+    if (BoundingBoxes.length > 0) {
+      // determine which ground truth array is being used
+      determineGroundTruthArray(requestImage);
+      // find Intersection of each AWS bounding box and ground truth
+      findIntersection();
+      // Draw bounding boxes
+      drawBoundingBoxes();
+      // calculate the IOU for each bounding box and ground truth
+      calculateIOU();
+      // Write labels into the image metadata
+      editMetadata(requestImage);
+    } else {
+      console.log("Bounding box array is empty!");
+    }
 
-    // determine which ground truth array is being used
-    determineGroundTruthArray(requestImage);
-
-    // find Intersection of each AWS bounding box and ground truth
-    findIntersection();
-
-    // Draw bounding boxes
-    drawBoundingBoxes();
-
-    // calculate the IOU for each bounding box and ground truth
-    calculateIOU();
-
-    // Write labels into the image metadata
-    editMetadata(requestImage);
-
-    // console.log("BoundingBoxes: ", BoundingBoxes);
-    // console.log("response: ", response);
-
-    // call the checkCategories function here
-    // checkCategories();
-
-    // empty labelArr so it's empty for the next time (i guess this works)
-    // labelArr = [];
+    res.send(response.Labels ?? "No labels detected from the image!");
   } catch (err) {
     console.log(err);
     res.send(err);

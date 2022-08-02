@@ -9,6 +9,7 @@ import {
   drawBoundingBoxes,
   findIntersection,
   calculateIOU,
+  determineGroundTruthArray,
 } from "./BoundingBoxes.js";
 import { editMetadata } from "./exifTool.js";
 import fs from "fs";
@@ -53,7 +54,6 @@ export let BoundingBoxes = [];
 router.post("/", upload.array("files"), async (req, res) => {
   try {
     buffer = req.files[0].buffer; // error handling here
-    console.log("req.files[0]: ", req.files[0].originalname);
 
     // initialize arrays that contain image data as empty
     BoundingBoxes.length = 0;
@@ -69,6 +69,7 @@ router.post("/", upload.array("files"), async (req, res) => {
       }
     );
     requestImage = `download_${req.files[0].originalname}`;
+    console.log("requestImage: ", requestImage);
 
     // Detects instances of real-world entities within an image as input.
     const detectLabelsCommand = new DetectLabelsCommand({
@@ -80,6 +81,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     // get the labels detected from the image
     response.Labels.forEach((result) => labelArr.push(result.Name));
     // console.log("labels found: ", labelArr);
+    res.send(response.Labels ?? "No labels detected from the image!");
 
     // get dimension of the request image
     var dimensions = sizeOf(buffer);
@@ -102,6 +104,7 @@ router.post("/", upload.array("files"), async (req, res) => {
       if (intersection.includes(label.Name)) {
         // loop through all instances of a label
         label.Instances.forEach((instance) => {
+          console.log("label.Instances from the loop:", instance);
           // assign values
           objectLabel = label.Name;
           bb_height = instance.BoundingBox.Height;
@@ -139,13 +142,16 @@ router.post("/", upload.array("files"), async (req, res) => {
       AWS_xStart
     );
 
+    // determine which ground truth array is being used
+    determineGroundTruthArray(requestImage);
+
+    // find Intersection of each AWS bounding box and ground truth
+    findIntersection();
+
     // Draw bounding boxes
     drawBoundingBoxes();
 
-    // find Intersection of the two rectangles
-    findIntersection();
-
-    // calculate the IOU
+    // calculate the IOU for each bounding box and ground truth
     calculateIOU();
 
     // Write labels into the image metadata
@@ -156,8 +162,6 @@ router.post("/", upload.array("files"), async (req, res) => {
 
     // call the checkCategories function here
     // checkCategories();
-
-    res.send(response.Labels ?? "No labels detected from the image!");
 
     // empty labelArr so it's empty for the next time (i guess this works)
     // labelArr = [];

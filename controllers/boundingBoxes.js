@@ -3,8 +3,6 @@ import fs from "fs";
 import {
   imageWidth,
   imageHeight,
-  AWS_height,
-  AWS_width,
   BoundingBoxes,
   requestImage,
 } from "./functionality.js";
@@ -16,6 +14,35 @@ import {
 
 // which ground truth set is being used for the current image
 let groundTruthArray = [];
+
+// variable for the intersection area
+let interSectionArea;
+
+// coordinates of the intersection rectangles for drawing them
+let interSectionCoordinates = [];
+
+// array for the intersection area values for all bounding boxes
+let interSectionArray = [];
+
+// combine AWS bounding boxes and their respective ground truths into one array
+let bb_groundTruth_combined = [];
+
+// array for the IOU values
+let IOU_array = [];
+
+export function determineGroundTruthArray(requestImage) {
+  // console.log("request image from determine ground truth: ", requestImage);
+  if (requestImage == "download_IMG_2150.jpg") {
+    groundTruthArray = groundTruth_IMG_2150;
+  } else if (requestImage == "download_IMG_2145.jpg") {
+    groundTruthArray = groundTruth_IMG_2145;
+  } else if (requestImage == "download_IMG_9783.jpg") {
+    groundTruthArray = groundTruth_IMG_9783;
+  } else {
+    console.log("no ground truths found!");
+  }
+  console.log("groundTruthArray is: ", groundTruthArray);
+}
 
 export function drawBoundingBoxes() {
   const canvas = createCanvas(imageWidth, imageHeight);
@@ -40,31 +67,10 @@ export function drawBoundingBoxes() {
       context.stroke();
     });
 
-    // take the ground truths for an image
     // if the ground truth for the image name doesn't exist -> only show AWS boxes
-
     // Draw the ground truth bounding boxes
-    if (requestImage == "download_IMG_2150.jpg") {
-      groundTruthArray = groundTruth_IMG_2150;
-      groundTruth_IMG_2150.forEach((i) => {
-        context.beginPath();
-        context.rect(i.xStart, i.yStart, i.width, i.height);
-        context.lineWidth = 10;
-        context.strokeStyle = "red";
-        context.stroke();
-      });
-    } else if (requestImage == "download_IMG_2145.jpg") {
-      groundTruthArray = groundTruth_IMG_2145;
-      groundTruth_IMG_2145.forEach((i) => {
-        context.beginPath();
-        context.rect(i.xStart, i.yStart, i.width, i.height);
-        context.lineWidth = 10;
-        context.strokeStyle = "red";
-        context.stroke();
-      });
-    } else if (requestImage == "download_IMG_9783.jpg") {
-      groundTruthArray = groundTruth_IMG_9783;
-      groundTruth_IMG_9783.forEach((i) => {
+    if (groundTruthArray.length > 0) {
+      groundTruthArray.forEach((i) => {
         context.beginPath();
         context.rect(i.xStart, i.yStart, i.width, i.height);
         context.lineWidth = 10;
@@ -75,11 +81,8 @@ export function drawBoundingBoxes() {
       console.log("No ground truths found for this image!");
     }
 
-    // get array with intersection rectangles
-    let findInter = findIntersection();
-    let rectangles = findInter.interSectionCoordinates;
     // draw the intersection rectangles
-    rectangles.forEach((r) => {
+    interSectionCoordinates.forEach((r) => {
       // console.log("intersection rectangle:", r);
       context.beginPath();
       context.rect(
@@ -102,27 +105,25 @@ export function drawBoundingBoxes() {
 
 // https://www.geeksforgeeks.org/intersecting-rectangle-when-bottom-left-and-top-right-corners-of-two-rectangles-are-given/
 export function findIntersection() {
-  let interSectionCoordinates = [];
-
   // coordinates for the intersection rectangle
   let intersection_xStart;
   let intersection_yStart;
   let interSectionWidth;
   let interSectionHeight;
 
+  // empty the arrays in between images
+  interSectionArray.length = 0;
+  interSectionCoordinates.length = 0;
+
   // helper function: combine two arrays of objects into one array of arrays
   const zip = (a1, a2) => a1.map((x, i) => [x, a2[i]]);
 
-  // combine AWS bounding boxes and their respective ground truths into one array
-  let bb_groundTruth_combined = [];
+  // if ((BoundingBoxes.length = !0)) {
   bb_groundTruth_combined = zip(groundTruthArray, BoundingBoxes);
   console.log("COMBINED ARRAY: ", bb_groundTruth_combined);
-
-  // area of the intersection rectangle
-  let interSectionArea;
-
-  // array for the intersection area values for all bounding boxes
-  let interSectionArray = [];
+  // } else {
+  //   console.log("There were no bounding boxes found in this image.");
+  // }
 
   // for each object in the bounding box & ground truth array
   bb_groundTruth_combined.forEach((i) => {
@@ -170,16 +171,15 @@ export function findIntersection() {
       interSectionHeight,
     });
 
-    console.log("interSectionCoordinates array: ", interSectionCoordinates);
-
     interSectionArea = interSectionWidth * interSectionHeight;
 
-    interSectionArray.push({ interSectionArea });
+    interSectionArray.push(interSectionArea);
   });
 
   // if (x5 > x6 || y5 > y6) {
   //   console.log("NO INTERSECTION FOUND!!!");
   // }
+  console.log("interSectionCoordinates array: ", interSectionCoordinates);
 
   return { interSectionCoordinates, interSectionArray };
 }
@@ -187,38 +187,25 @@ export function findIntersection() {
 // https://medium.com/analytics-vidhya/iou-intersection-over-union-705a39e7acef
 export function calculateIOU() {
   // get the intersection areas for all AWS predictions and their ground truths in the image
-  let findInter = findIntersection();
-  let intersectionArray = findInter.interSectionArray;
-  // console.log("interSection area: ", interArea);
 
-  let groundTruthArea;
-  let areaAWS;
-  let bothAreas;
-  let union;
+  // console.log("intersection array from calculate IOU: ", interSectionArray);
+  IOU_array.length = 0;
+  let groundTruthArea = 0;
+  let areaAWS = 0;
+  let bothAreas = 0;
+  let union = 0;
 
-  // for each ground truth
-  groundTruthArray.forEach((i) => {
-    areaAWS = AWS_width * AWS_height;
-    groundTruthArea = i.width * i.height;
+  // for each ground truth and AWS bounding box
+  bb_groundTruth_combined.forEach((i, index) => {
+    let interSect = interSectionArray[index];
+    areaAWS = i[1].AWS_width * i[1].AWS_height;
+    groundTruthArea = i[0].width * i[0].height;
     bothAreas = areaAWS + groundTruthArea;
-    union = bothAreas - intersectionArray[i];
+    union = bothAreas - interSect;
 
     // divide intersection / union
-    let IOU = intersectionArray[i] / union;
-    console.log("IOU: ", IOU);
+    let IOU = interSect / union;
+    IOU_array.push(IOU);
   });
-
-  // get the union of the two rectangles
-  // 1. calculate the area of the individual boxes
-  // let areaAWS = AWS_width * AWS_height;
-  //let groundTruthArea = ground_width * ground_height;
-  // let bothAreas = areaAWS + groundTruthArea;
-
-  // union is the union minus the part which is included in both rectangles,
-  // otherwise we would have the intersection area twice
-  // let union = bothAreas - intersectionArea;
-
-  // divide intersection / union
-  // let IOU = intersectionArea / union;
-  // console.log("IOU: ", IOU);
+  console.log("IOU ARRAY: ", IOU_array);
 }

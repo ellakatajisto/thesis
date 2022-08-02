@@ -48,4 +48,16 @@ export const groundTruth_IMG_9783 = [
     height: 1,
     width: 1,
   },
+  {
+    xStart: 1,
+    yStart: 1,
+    height: 1,
+    width: 1,
+  },
+  {
+    xStart: 1,
+    yStart: 1,
+    height: 1,
+    width: 1,
+  },
 ];

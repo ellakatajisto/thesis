@@ -41,7 +41,7 @@ export function drawBoundingBoxes(groundTruthArray) {
         box.AWS_width,
         box.AWS_height
       );
-      context.lineWidth = 10;
+      context.lineWidth = 4;
       context.strokeStyle = "yellow";
       context.stroke();
     });
@@ -52,7 +52,7 @@ export function drawBoundingBoxes(groundTruthArray) {
       groundTruthArray.forEach((i) => {
         context.beginPath();
         context.rect(i.xStart, i.yStart, i.width, i.height);
-        context.lineWidth = 10;
+        context.lineWidth = 4;
         context.strokeStyle = "red";
         context.stroke();
       });
@@ -70,7 +70,7 @@ export function drawBoundingBoxes(groundTruthArray) {
         r.interSectionWidth,
         r.interSectionHeight
       );
-      context.lineWidth = 4;
+      context.lineWidth = 2;
       context.strokeStyle = "blue";
       // context.fillStyle = "blue";
       // context.fill();

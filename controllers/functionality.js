@@ -62,14 +62,14 @@ router.post("/", upload.array("files"), async (req, res) => {
     // save the file from the request into the filesystem
     // saveFile(req.files[0], buffer);
     fs.writeFile(
-      `download_${req.files[0].originalname}`,
+      `downloads/download_${req.files[0].originalname}`,
       buffer,
       function (err) {
         if (err) throw err;
         // console.log("file saved");
       }
     );
-    requestImage = `download_${req.files[0].originalname}`;
+    requestImage = `downloads/download_${req.files[0].originalname}`;
     // console.log("requestImage: ", requestImage);
 
     // Detects instances of real-world entities within an image as input.
@@ -82,9 +82,6 @@ router.post("/", upload.array("files"), async (req, res) => {
 
     // get the labels detected from the image
     response.Labels.forEach((result) => labelArr.push(result.Name));
-
-    // console.log("labels found: ", labelArr);
-    // res.send(response.Labels ?? "No labels detected from the image!");
 
     // get dimension of the request image
     var dimensions = sizeOf(buffer);
@@ -108,7 +105,7 @@ router.post("/", upload.array("files"), async (req, res) => {
         // loop through all instances of a label
         if (label.Instances.length == 0) {
           console.log(
-            `No bounding boxes provided for recognised object: ${label.Name}`
+            `No AWS bounding boxes provided for recognised object: ${label.Name}`
           );
         } else {
           label.Instances.forEach((instance) => {
@@ -139,19 +136,22 @@ router.post("/", upload.array("files"), async (req, res) => {
     });
 
     console.log("Bounding boxes array: ", boundingBoxes);
+    // if AWS bounding boxes are available for this image
     if (boundingBoxes.length > 0) {
       // determine which ground truth array is being used
       determineGroundTruthArray(requestImage);
-      // find Intersection of each AWS bounding box and ground truth
+      // find intersection of each AWS bounding box and respective ground truth
       findIntersection(groundTruthArray);
-      // Draw bounding boxes
+      // Draw the bounding boxes
       drawBoundingBoxes(groundTruthArray);
       // calculate the IOU for each bounding box and ground truth
       calculateIOU();
       // Write labels into the image metadata
       editMetadata(requestImage);
     } else {
-      console.log("Bounding box array is empty!");
+      console.log(
+        "AWS did not provide any bounding boxes for the objects in this image!"
+      );
     }
 
     res.send(response.Labels ?? "No labels detected from the image!");

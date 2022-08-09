@@ -1,6 +1,6 @@
 import exiftool from "node-exiftool";
 import exiftoolBin from "dist-exiftool";
-import { labelArr } from "./functionality.js";
+import { labelArr, labels_with_bboxes } from "./functionality.js";
 
 export function editMetadata(image) {
   try {
@@ -16,7 +16,7 @@ export function editMetadata(image) {
             {
               // all: "", // remove existing tags
               // comment: "Exiftool rules!", // change this?
-              subject: labelArr,
+              subject: labels_with_bboxes,
               // ImageRegion: 1,
             },
             ["overwrite_original"]

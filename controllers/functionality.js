@@ -3,6 +3,7 @@ import multer from "multer";
 import {
   RekognitionClient,
   DetectLabelsCommand,
+  DetectLabelsRequest,
 } from "@aws-sdk/client-rekognition";
 import sizeOf from "buffer-image-size";
 import {
@@ -23,6 +24,9 @@ const rekognitionClient = new RekognitionClient({ region: "eu-central-1" });
 // array for the labels
 export let labelArr = [];
 
+// array to be inserted to the image metadata
+export let labels_with_bboxes = [];
+
 // input image fileName
 export let requestImage;
 
@@ -39,12 +43,6 @@ export let AWS_xStart;
 // variable for the data from the request image
 let buffer;
 
-// the dimensions of the AWS bounding box in relation to the input image
-let bb_height;
-let bb_width;
-let topCoordinate;
-let leftCoordinate;
-
 // label of the object of the bounding box
 let objectLabel;
 
@@ -58,6 +56,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     // initialize arrays that contain image data as empty
     boundingBoxes.length = 0;
     labelArr.length = 0;
+    labels_with_bboxes.length = 0;
 
     // save the file from the request into the filesystem
     // saveFile(req.files[0], buffer);
@@ -75,6 +74,7 @@ router.post("/", upload.array("files"), async (req, res) => {
     // Detects instances of real-world entities within an image as input.
     const detectLabelsCommand = new DetectLabelsCommand({
       Image: { Bytes: buffer },
+      // MinConfidence: 60,
     });
 
     // sends the detectLabelsCommand to the client
@@ -96,31 +96,31 @@ router.post("/", upload.array("files"), async (req, res) => {
       }
     });
 
+    // clone the intersection array to a nested array
+    // labels_with_bboxes = intersection.map((x) => [x]);
+    // console.log("labels with bboxes: ", labels_with_bboxes);
+
     console.log("intersection array: ", intersection);
 
     // loop through all labels
     response.Labels.forEach((label) => {
       // if label is found in intersection
       if (intersection.includes(label.Name)) {
-        // loop through all instances of a label
+        //   loop through all instances of a label
         if (label.Instances.length == 0) {
           console.log(
             `No AWS bounding boxes provided for recognised object: ${label.Name}`
           );
+          labels_with_bboxes.push({ objectLabel: label.Name });
         } else {
+          // for all labels with bounding boxes assigned
           label.Instances.forEach((instance) => {
-            // assign values
-            objectLabel = label.Name;
-            bb_height = instance.BoundingBox.Height;
-            bb_width = instance.BoundingBox.Width;
-            topCoordinate = instance.BoundingBox.Top;
-            leftCoordinate = instance.BoundingBox.Left;
-
             // get the location of the bounding box in pixels
-            AWS_height = bb_height * imageHeight;
-            AWS_width = bb_width * imageWidth;
-            AWS_yStart = topCoordinate * imageHeight;
-            AWS_xStart = leftCoordinate * imageWidth;
+            objectLabel = label.Name;
+            AWS_height = instance.BoundingBox.Height * imageHeight;
+            AWS_width = instance.BoundingBox.Width * imageWidth;
+            AWS_yStart = instance.BoundingBox.Top * imageHeight;
+            AWS_xStart = instance.BoundingBox.Left * imageWidth;
 
             // push all instances of an object into the bounding box array
             boundingBoxes.push({
@@ -130,10 +130,22 @@ router.post("/", upload.array("files"), async (req, res) => {
               AWS_xStart,
               AWS_width,
             });
+
+            labels_with_bboxes.push({
+              objectLabel: label.Name,
+              AWS_height: instance.BoundingBox.Height * imageHeight,
+              AWS_width: instance.BoundingBox.Width * imageWidth,
+              AWS_yStart: instance.BoundingBox.Top * imageHeight,
+              AWS_xStart: instance.BoundingBox.Left * imageWidth,
+            });
           });
         }
       }
     });
+
+    // console.log("labelArray: ", labelArr);
+
+    console.log("labels with bboxes after pushing: ", labels_with_bboxes);
 
     console.log("Bounding boxes array: ", boundingBoxes);
     // if AWS bounding boxes are available for this image

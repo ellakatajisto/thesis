@@ -5,8 +5,10 @@ import {
   groundTruth_IMG_9117,
   groundTruth_IMG_9120,
   groundTruth_IMG_9080,
+  groundTruth_IMG_9334,
+  groundTruth_IMG_9338,
   groundTruth_tonis_office,
-} from "../helper/groundTruths.js";
+} from "./groundTruths.js";
 
 // which ground truth set is being used for the current image
 export let groundTruthArray = [];
@@ -28,6 +30,10 @@ export function determineGroundTruthArray(requestImage) {
     groundTruthArray = groundTruth_IMG_9120;
   } else if (requestImage == "downloads/download_tonis_office.JPG") {
     groundTruthArray = groundTruth_tonis_office;
+  } else if (requestImage == "downloads/download_IMG_9334.JPG") {
+    groundTruthArray = groundTruth_IMG_9334;
+  } else if (requestImage == "downloads/download_IMG_9338.JPG") {
+    groundTruthArray = groundTruth_IMG_9338;
   } else {
     groundTruthArray.length = 0;
     console.log("No ground truth array available for this image!");

@@ -15,8 +15,8 @@ export function editMetadata(image) {
             image,
             {
               // all: "", // remove existing tags
-              // comment: "Exiftool rules!", // change this?
               subject: labels_with_bboxes,
+              // subject: JSON.stringify(labels_with_bboxes),
               // ImageRegion: 1,
             },
             ["overwrite_original"]

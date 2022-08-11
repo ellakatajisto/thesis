@@ -6,15 +6,15 @@ import {
   DetectLabelsRequest,
 } from "@aws-sdk/client-rekognition";
 import sizeOf from "buffer-image-size";
-import {
-  drawBoundingBoxes,
-  findIntersection,
-  calculateIOU,
-} from "./BoundingBoxes.js";
+import { drawBoundingBoxes } from "./BoundingBoxes.js";
+import { findIntersection, calculateIOU } from "./calculations.js";
 import { editMetadata } from "./exifTool.js";
 import fs from "fs";
 import { computerValues } from "../helper/labels.js";
-import { determineGroundTruthArray, groundTruthArray } from "./groundTruth.js";
+import {
+  determineGroundTruthArray,
+  groundTruthArray,
+} from "../helper/groundTruth.js";
 
 // import { checkCategories } from "./imageCategories.js";
 const router = express.Router();
@@ -77,7 +77,7 @@ router.post("/", upload.array("files"), async (req, res) => {
       // MinConfidence: 60,
     });
 
-    // sends the detectLabelsCommand to the client
+    // sends the detectLabelsCommand
     const response = await rekognitionClient.send(detectLabelsCommand);
 
     // get the labels detected from the image
@@ -145,7 +145,7 @@ router.post("/", upload.array("files"), async (req, res) => {
 
     // console.log("labelArray: ", labelArr);
 
-    console.log("labels with bboxes after pushing: ", labels_with_bboxes);
+    console.log("Object labels with bounding boxes: ", labels_with_bboxes);
 
     console.log("Bounding boxes array: ", boundingBoxes);
     // if AWS bounding boxes are available for this image

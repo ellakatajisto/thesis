@@ -220,3 +220,88 @@ export const groundTruth_tonis_office = [
     width: 200,
   },
 ];
+
+export const groundTruth_IMG_9334 = [
+  // Computer keyboard 1
+  {
+    xStart: 220,
+    yStart: 834,
+    height: 190,
+    width: 494,
+  },
+  // Computer keyboard 2
+  {
+    xStart: 120,
+    yStart: 636,
+    height: 88,
+    width: 260,
+  },
+  // Computer Keyboard 3
+  {
+    xStart: 0,
+    yStart: 0,
+    height: 0,
+    width: 0,
+  },
+  // Laptop 1
+  {
+    xStart: 100,
+    yStart: 461,
+    height: 315,
+    width: 285,
+  },
+  // Monitor 1
+  {
+    xStart: 127,
+    yStart: 165,
+    height: 149,
+    width: 180,
+  },
+  //  Monitor 2
+  {
+    xStart: 0,
+    yStart: 0,
+    height: 0,
+    width: 0,
+  },
+  // Monitor 2
+  {
+    xStart: 470,
+    yStart: 160,
+    height: 139,
+    width: 125,
+  },
+];
+
+export const groundTruth_IMG_9338 = [
+  {
+    xStart: 0,
+    yStart: 0,
+    height: 0,
+    width: 0,
+  },
+  {
+    xStart: 473,
+    yStart: 813,
+    height: 121,
+    width: 249,
+  },
+  {
+    xStart: 0,
+    yStart: 0,
+    height: 0,
+    width: 0,
+  },
+  {
+    xStart: 0,
+    yStart: 0,
+    height: 0,
+    width: 0,
+  },
+  {
+    xStart: 0,
+    yStart: 0,
+    height: 0,
+    width: 0,
+  },
+];
